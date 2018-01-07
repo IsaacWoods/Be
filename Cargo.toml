@@ -1,0 +1,6 @@
+[package]
+name = "be"
+version = "0.1.0"
+authors = ["Isaac Woods <isaacwoods.home@gmail.com>"]
+
+[dependencies]
