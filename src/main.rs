@@ -3,6 +3,10 @@
  * See LICENCE.md
  */
 
+mod cautious_iter;
+
+use cautious_iter::CautiousIterator;
+
 #[derive(Debug)]
 enum TokenKind
 {
@@ -61,24 +65,22 @@ fn main() {
                             let mut string = String::new();
                             string.push(c);
 
-                            while let Some(&(_, n)) = char_indices.peek()
-                            {
-                                match n
-                                {
-                                    'a'...'z' | 'A'...'Z' =>
+                            for (_, n) in char_indices.cautious_take_while(
+                                |&(_, c)| {
+                                    match c
                                     {
-                                        string.push(n);
-                                        char_indices.next();
-                                    },
-
-                                    _ => break,
-                                }
+                                        'a'...'z' | 'A'...'Z'   => true,
+                                        _                       => false,
+                                    }
+                                })
+                            {
+                                string.push(n);
                             }
 
                             Token::new(TokenKind::Identifier(string), offset, line, line_offset)
                         },
 
-                        _ => panic!("Unexpected char to be lexed: {}", c),
+                        _ => panic!("Tried to lex unexpected character: {}", c),
                     };
 
         println!("{:#?}", token);
