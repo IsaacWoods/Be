@@ -5,9 +5,24 @@
 
 use token::{TokenStream,TokenKind};
 
+#[derive(Debug)]
+pub enum BindingState
+{
+    Unknown,
+    Known(isize),
+}
+
+#[derive(Debug)]
+pub struct Binding
+{
+    name    : String,
+    state   : BindingState,
+}
+
 pub struct Parser<'a>
 {
-    stream : TokenStream<'a>,
+    stream      : TokenStream<'a>,
+    bindings    : Vec<Binding>,
 }
 
 impl<'a> Parser<'a>
@@ -16,7 +31,8 @@ impl<'a> Parser<'a>
     {
         Parser
         {
-            stream : stream,
+            stream      : stream,
+            bindings    : Vec::new(),
         }
     }
 
@@ -28,13 +44,47 @@ impl<'a> Parser<'a>
             {
                 TokenKind::Let => self.parse_let(),
 
+                TokenKind::NewLine => { },
+
                 _ => println!("Unparsed: {:?}", token),
             }
+        }
+
+        for binding in self.bindings.iter()
+        {
+            println!("Binding: {:?}", binding);
         }
     }
 
     pub fn parse_let(&mut self)
     {
-        println!("Parsing let");
+        let identifier = self.stream.next().unwrap();
+        let name : String;
+
+        match identifier.kind
+        {
+            TokenKind::Identifier(identifier_name) => name = identifier_name,
+            _ => panic!("Incorrect kind for let binding: identifier expected"),
+        }
+
+        self.stream.consume(TokenKind::Equals);
+
+        let value = self.stream.next().unwrap();
+
+        match value.kind
+        {
+            TokenKind::Identifier(value_name) =>
+            {
+                // TODO: store a thunk to calculate this binding's value when we can
+                self.bindings.push(Binding { name : name, state : BindingState::Unknown });
+            },
+
+            TokenKind::Integer(value) =>
+            {
+                self.bindings.push(Binding { name : name, state : BindingState::Known(value) });
+            },
+
+            _ => panic!("Shits fucked"),
+        }
     }
 }

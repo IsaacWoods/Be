@@ -7,7 +7,7 @@ use cautious_iter::CautiousIterator;
 use std::iter::Peekable;
 use std::str::Chars;
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq)]
 pub enum TokenKind
 {
     Let,
@@ -61,6 +61,18 @@ impl<'a> TokenStream<'a>
             line        : self.current_line,
             line_offset : self.current_line_offset
         }
+    }
+
+    pub fn consume(&mut self, kind : TokenKind) -> Token
+    {
+        let next = self.next().unwrap();
+        
+        if next.kind == kind
+        {
+            return next;
+        }
+
+        panic!("Expected token of kind {:?} but got {:?}!", kind, next.kind);
     }
 }
 
