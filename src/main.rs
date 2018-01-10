@@ -5,15 +5,21 @@
 
 mod cautious_iter;
 mod token;
+mod parser;
 
 use token::TokenStream;
+use parser::Parser;
 
 fn main() {
-    let source = "abc$$def";
-    let token_stream = TokenStream::new(source);
+    /*
+     * XXX: Use # to escape special characters
+     */
+    let source = r###"
+        let x = 5
+        let y = x
+    "###;
 
-    for token in token_stream
-    {
-        println!("{:#?}", token);
-    }
+    let token_stream = TokenStream::new(source);
+    let mut parser = Parser::new(token_stream);
+    parser.parse();
 }

@@ -10,9 +10,13 @@ use std::str::Chars;
 #[derive(Debug)]
 pub enum TokenKind
 {
-    DollarSign,
+    Let,
+
+    Dollar,
+    Equals,
 
     Identifier(String),
+    Integer(isize),
 
     NewLine,
 }
@@ -20,12 +24,13 @@ pub enum TokenKind
 #[derive(Debug)]
 pub struct Token
 {
-    kind        : TokenKind,
-    offset      : usize,
-    line        : usize,
-    line_offset : usize,
+    pub kind        : TokenKind,
+    pub offset      : usize,
+    pub line        : usize,
+    pub line_offset : usize,
 }
 
+#[derive(Debug)]
 pub struct TokenStream<'a>
 {
     it                  : Peekable<Chars<'a>>,
@@ -76,13 +81,21 @@ impl<'a> Iterator for TokenStream<'a>
 
         match c
         {
-            '$' => Some(self.make_token(TokenKind::DollarSign)),
+            '$' => Some(self.make_token(TokenKind::Dollar)),
+            '=' => Some(self.make_token(TokenKind::Equals)),
+
+            /*
+             * To skip the space, we recurse to lex the next and return that
+             */
+            ' ' => self.next(),
 
             '\n' =>
             {
                 let token = self.make_token(TokenKind::NewLine);
+
                 self.current_line += 1;
                 self.current_line_offset = 0;
+
                 Some(token)
             },
 
@@ -103,10 +116,34 @@ impl<'a> Iterator for TokenStream<'a>
                     string.push(next_char);
                 }
 
-                Some(self.make_token(TokenKind::Identifier(string)))
+                match &string as &str
+                {
+                    "let"   => Some(self.make_token(TokenKind::Let)),
+                    _       => Some(self.make_token(TokenKind::Identifier(string))),
+                }
             },
 
-            _ => panic!("Tried to lex unexpected character: {}", c),
+            '0'...'9' =>
+            {
+                let mut string = String::new();
+                string.push(c);
+
+                for next_char in self.it.cautious_take_while(
+                    |&c| {
+                        match c
+                        {
+                            '0'...'9'   => true,
+                            _           => false,
+                        }
+                    })
+                {
+                    string.push(next_char);
+                }
+
+                Some(self.make_token(TokenKind::Integer(string.parse::<isize>().unwrap())))
+            },
+
+            _ => panic!("Tried to lex unexpected character: `{}`", c),
         }
     }
 }
